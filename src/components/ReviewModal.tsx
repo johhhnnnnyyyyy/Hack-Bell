@@ -21,6 +21,7 @@ const TYPE_LABELS: Record<PIIType, string> = {
     MEDICAL: 'Medical Information',
     EMAIL: 'Email Address',
     DOB: 'Date of Birth',
+    SENSITIVE: 'Sensitive Info',
 };
 
 const TYPE_COLORS: Record<PIIType, string> = {
@@ -33,6 +34,7 @@ const TYPE_COLORS: Record<PIIType, string> = {
     MEDICAL: '#ec4899',
     EMAIL: '#06b6d4',
     DOB: '#14b8a6',
+    SENSITIVE: '#6b7280',
 };
 
 export const ReviewModal: React.FC<ReviewModalProps> = ({

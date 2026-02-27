@@ -1,29 +1,30 @@
 import type { DetectedEntity, OCRWord } from '../types';
 import { runLayer1Detection } from './layer1';
-import { WorkerPool } from '../workers/WorkerPool';
+import { runGeminiDetection } from './gemini';
 
 /**
  * Unified Detection Pipeline
- * Merges Layer 1 (deterministic) and Layer 2 (heuristic NER) results.
- * Deduplicates overlapping detections and filters by confidence threshold.
+ * Layer 1: deterministic regex + checksum detection
+ * Layer 2: Gemini 1.5 Flash AI-powered PII detection
  */
 export async function runDetectionPipeline(
     fullText: string,
     words: OCRWord[],
-    workerPool: WorkerPool,
+    geminiApiKey: string,
     confidenceThreshold: number = 0.5,
     requiredFields: string[] = [],
-    pageIndex: number = 0
+    pageIndex: number = 0,
+    onProgress?: (msg: string) => void
 ): Promise<DetectedEntity[]> {
     // Run Layer 1 synchronously (fast regex + checksums)
     const layer1Entities = runLayer1Detection(fullText, words, pageIndex);
 
-    // Run Layer 2 via NLP worker (heuristic NER)
+    // Run Layer 2 via Gemini AI
     let layer2Entities: DetectedEntity[] = [];
     try {
-        layer2Entities = await workerPool.runNLP(fullText, words, pageIndex);
+        layer2Entities = await runGeminiDetection(fullText, words, geminiApiKey, pageIndex, onProgress);
     } catch (err) {
-        console.warn('Layer 2 NLP detection failed:', err);
+        console.warn('Gemini detection failed:', err);
     }
 
     // Merge results

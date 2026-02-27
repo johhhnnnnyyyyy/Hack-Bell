@@ -1,12 +1,10 @@
-import type { OCRResponse, NLPResponse, OCRWord, DetectedEntity } from '../types';
+import type { OCRResponse, OCRWord } from '../types';
 
-type WorkerCallback = (response: OCRResponse | NLPResponse) => void;
+type WorkerCallback = (response: OCRResponse) => void;
 
 export class WorkerPool {
     private ocrWorker: Worker | null = null;
-    private nlpWorker: Worker | null = null;
     private ocrCallbacks: Map<string, WorkerCallback> = new Map();
-    private nlpCallbacks: Map<string, WorkerCallback> = new Map();
     private progressCallback: ((progress: number, message: string) => void) | null = null;
 
     setProgressCallback(cb: (progress: number, message: string) => void): void {
@@ -33,22 +31,6 @@ export class WorkerPool {
             }
         };
         return this.ocrWorker;
-    }
-
-    private initNLPWorker(): Worker {
-        if (this.nlpWorker) return this.nlpWorker;
-        this.nlpWorker = new Worker(
-            new URL('./nlp.worker.ts', import.meta.url),
-            { type: 'module' }
-        );
-        this.nlpWorker.onmessage = (e: MessageEvent<NLPResponse>) => {
-            for (const [id, cb] of this.nlpCallbacks) {
-                cb(e.data);
-                this.nlpCallbacks.delete(id);
-                break;
-            }
-        };
-        return this.nlpWorker;
     }
 
     async runOCR(
@@ -81,34 +63,9 @@ export class WorkerPool {
         });
     }
 
-    async runNLP(
-        text: string,
-        words: OCRWord[],
-        pageIndex: number = 0
-    ): Promise<DetectedEntity[]> {
-        const worker = this.initNLPWorker();
-        const id = crypto.randomUUID();
-
-        return new Promise((resolve, reject) => {
-            this.nlpCallbacks.set(id, (response) => {
-                const r = response as NLPResponse;
-                if (r.type === 'NLP_ERROR') {
-                    reject(new Error(r.error));
-                } else {
-                    resolve((r.entities ?? []) as DetectedEntity[]);
-                }
-            });
-
-            worker.postMessage({ type: 'NLP_ANALYZE', text, words, pageIndex });
-        });
-    }
-
     terminate(): void {
         this.ocrWorker?.terminate();
-        this.nlpWorker?.terminate();
         this.ocrWorker = null;
-        this.nlpWorker = null;
         this.ocrCallbacks.clear();
-        this.nlpCallbacks.clear();
     }
 }

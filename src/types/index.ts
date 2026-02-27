@@ -9,7 +9,8 @@ export type PIIType =
     | 'ADDRESS'
     | 'MEDICAL'
     | 'EMAIL'
-    | 'DOB';
+    | 'DOB'
+    | 'SENSITIVE';
 
 export interface BoundingBox {
     x: number;

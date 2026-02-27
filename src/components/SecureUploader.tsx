@@ -11,6 +11,7 @@ import { ReviewModal } from './ReviewModal';
 
 const DEFAULT_MAX_SIZE_MB = 25;
 const DEFAULT_CONFIDENCE = 0.5;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
 
 export const SecureUploader: React.FC<SecureUploaderProps> = ({
     requiredFields = [],
@@ -113,10 +114,11 @@ export const SecureUploader: React.FC<SecureUploaderProps> = ({
             const detected = await runDetectionPipeline(
                 fullText,
                 words,
-                pool,
+                GEMINI_API_KEY,
                 confidenceThreshold,
                 requiredFields,
-                0
+                0,
+                (msg) => setMessage(msg)
             );
 
             setEntities(detected);
