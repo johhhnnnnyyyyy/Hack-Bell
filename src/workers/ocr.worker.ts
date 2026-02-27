@@ -47,7 +47,7 @@ self.onmessage = async (e: MessageEvent) => {
             imageSource = new Blob([fileBuffer], { type: fileType });
         }
 
-        const result = await worker.recognize(imageSource, {}, { blocks: true });
+        const result = await worker.recognize(imageSource, {}, { text: true, blocks: true });
         const words: OCRWordResult[] = [];
 
         // Tesseract.js v7 nests words in blocks → paragraphs → lines → words.
@@ -86,7 +86,13 @@ self.onmessage = async (e: MessageEvent) => {
 
         console.log(`[OCR Worker] Extracted ${words.length} words from Tesseract`);
 
-        const fullText = result.data.text;
+        // Use Tesseract's text if available, otherwise reconstruct from words
+        let fullText = result.data.text ?? '';
+        if (!fullText.trim() && words.length > 0) {
+            fullText = words.map(w => w.text).join(' ');
+            console.log('[OCR Worker] Reconstructed fullText from words');
+        }
+        console.log(`[OCR Worker] fullText length: ${fullText.length}`);
 
         self.postMessage({
             type: 'OCR_RESULT',

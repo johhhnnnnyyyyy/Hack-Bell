@@ -20,6 +20,26 @@ export interface BoundingBox {
     pageIndex: number;
 }
 
+export interface SpatialMapEntry {
+    text: string;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    pageIndex: number;
+    redact: boolean;
+}
+
+export interface RedactionZone {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    pageIndex: number;
+    matchedPhrase: string;
+    matchedWords: string[];
+}
+
 export interface DetectedEntity {
     id: string;
     type: PIIType;
@@ -27,7 +47,7 @@ export interface DetectedEntity {
     confidence: number;
     bbox: BoundingBox;
     masked: boolean;
-    layer: 1 | 2;
+    layer: 1 | 2 | 3;
 }
 
 // ─── Worker Message Types ───────────────────────────────────────────────────

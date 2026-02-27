@@ -85,7 +85,6 @@ function mapTextToBBox(
     pageIndex: number
 ): DetectedEntity['bbox'] {
     const matchedText = fullText.substring(startIdx, endIdx).trim();
-    console.log('[mapTextToBBox] Mapping:', { matchedText, startIdx, endIdx, totalWords: words.length });
 
     // --- Strategy 1: Direct token matching (most reliable) ---
     const tokens = matchedText.split(/\s+/).filter(t => t.length > 0);
@@ -109,7 +108,6 @@ function mapTextToBBox(
                         words.slice(i, i + cleanedTokens.length),
                         pageIndex
                     );
-                    console.log('[mapTextToBBox] ✓ Strategy 1a (exact sequential match):', result);
                     return result;
                 }
             }
@@ -129,7 +127,6 @@ function mapTextToBBox(
                 }
                 if (matched.length >= Math.ceil(cleanedTokens.length / 2)) {
                     const result = mergeWordBBoxes(matched, pageIndex);
-                    console.log('[mapTextToBBox] ✓ Strategy 1b (partial match):', result);
                     return result;
                 }
             }
@@ -155,7 +152,6 @@ function mapTextToBBox(
 
     if (matchingWords.length > 0) {
         const result = mergeWordBBoxes(matchingWords, pageIndex);
-        console.log('[mapTextToBBox] ✓ Strategy 2 (position-based):', result);
         return result;
     }
 
