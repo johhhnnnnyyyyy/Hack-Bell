@@ -18,11 +18,13 @@ export async function runDetectionPipeline(
 ): Promise<DetectedEntity[]> {
     // Run Layer 1 synchronously (fast regex + checksums)
     const layer1Entities = runLayer1Detection(fullText, words, pageIndex);
+    console.log('[Pipeline] Layer 1 entities:', layer1Entities.map(e => ({ type: e.type, value: e.value, confidence: e.confidence, bbox: e.bbox })));
 
     // Run Layer 2 via Gemini AI
     let layer2Entities: DetectedEntity[] = [];
     try {
         layer2Entities = await runGeminiDetection(fullText, words, geminiApiKey, pageIndex, onProgress);
+        console.log('[Pipeline] Gemini entities:', layer2Entities.map(e => ({ type: e.type, value: e.value, confidence: e.confidence, bbox: e.bbox })));
     } catch (err) {
         console.warn('Gemini detection failed:', err);
     }
@@ -32,9 +34,11 @@ export async function runDetectionPipeline(
 
     // Deduplicate overlapping detections (prefer higher confidence)
     const deduped = deduplicateEntities(allEntities);
+    console.log('[Pipeline] After dedup:', deduped.map(e => ({ type: e.type, value: e.value, confidence: e.confidence, bbox: e.bbox })));
 
     // Filter by confidence threshold
     const filtered = deduped.filter(e => e.confidence >= confidenceThreshold);
+    console.log('[Pipeline] After filtering (threshold=' + confidenceThreshold + '):', filtered.map(e => ({ type: e.type, value: e.value, confidence: e.confidence, bbox: e.bbox, masked: e.masked })));
 
     // Mark required fields as unmasked
     for (const entity of filtered) {

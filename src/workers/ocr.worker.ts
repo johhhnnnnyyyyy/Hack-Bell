@@ -47,24 +47,44 @@ self.onmessage = async (e: MessageEvent) => {
             imageSource = new Blob([fileBuffer], { type: fileType });
         }
 
-        const result = await worker.recognize(imageSource);
+        const result = await worker.recognize(imageSource, {}, { blocks: true });
         const words: OCRWordResult[] = [];
 
-        if (result.data.words) {
-            for (const word of result.data.words) {
-                words.push({
-                    text: word.text,
-                    confidence: word.confidence / 100,
-                    bbox: {
-                        x: word.bbox.x0,
-                        y: word.bbox.y0,
-                        w: word.bbox.x1 - word.bbox.x0,
-                        h: word.bbox.y1 - word.bbox.y0,
-                        pageIndex: pageIndex ?? 0,
-                    },
-                });
+        // Tesseract.js v7 nests words in blocks → paragraphs → lines → words.
+        // blocks are only populated when { blocks: true } is passed to recognize().
+        const extractWord = (w: any) => {
+            if (!w || !w.text || !w.bbox) return;
+            words.push({
+                text: w.text,
+                confidence: (w.confidence ?? 0) / 100,
+                bbox: {
+                    x: w.bbox.x0,
+                    y: w.bbox.y0,
+                    w: w.bbox.x1 - w.bbox.x0,
+                    h: w.bbox.y1 - w.bbox.y0,
+                    pageIndex: pageIndex ?? 0,
+                },
+            });
+        };
+
+        if (result.data.blocks && result.data.blocks.length > 0) {
+            for (const block of result.data.blocks) {
+                for (const paragraph of (block.paragraphs ?? [])) {
+                    for (const line of (paragraph.lines ?? [])) {
+                        for (const word of (line.words ?? [])) {
+                            extractWord(word);
+                        }
+                    }
+                }
+            }
+        } else if ((result.data as any).words && (result.data as any).words.length > 0) {
+            // Legacy v4 fallback
+            for (const word of (result.data as any).words) {
+                extractWord(word);
             }
         }
+
+        console.log(`[OCR Worker] Extracted ${words.length} words from Tesseract`);
 
         const fullText = result.data.text;
 
